@@ -2,12 +2,12 @@
 // 환경변수: TOSS_SECRET_KEY (시크릿 키), FIREBASE_SERVICE_ACCOUNT (서비스 계정 JSON 전체)
 const admin = require('firebase-admin');
 
-const PACKS = {   // 클라이언트(pp_pay.js)의 PAY_PACKS와 같아야 해요. 가격은 항상 이 표로만 확인해요.
-  c1: { won: 1000, coins: 1000 },
-  c2: { won: 5000, coins: 5500 },
-  c3: { won: 10000, coins: 11500 },
-  c4: { won: 30000, coins: 36000 },
-  c5: { won: 50000, coins: 65000 },
+const PACKS = {   // 클라이언트(pp_pay.js)의 PAY_PACKS와 같아야 해요. 가격은 항상 이 표로만 확인해요. (10,000코인 = 5,000원)
+  c1: { won: 5000, coins: 10000 },
+  c2: { won: 10000, coins: 20000 },
+  c3: { won: 20000, coins: 40000 },
+  c4: { won: 30000, coins: 60000 },
+  c5: { won: 50000, coins: 100000 },
 };
 
 function init() {
@@ -29,19 +29,3 @@ exports.handler = async event => {
     if (!pack || Number(amount) !== pack.won) return reply(400, { message: '금액이 맞지 않아요.' });
 
     const ref = admin.firestore().doc('purchases/' + uid + '/orders/' + orderId);
-    if ((await ref.get()).exists) return reply(200, { ok: true, dup: true });   // 이미 처리한 주문
-
-    const r = await fetch('https://api.tosspayments.com/v1/payments/confirm', {
-      method: 'POST',
-      headers: { Authorization: 'Basic ' + Buffer.from(process.env.TOSS_SECRET_KEY + ':').toString('base64'), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentKey, orderId, amount: pack.won }),
-    });
-    const p = await r.json();
-    if (!r.ok || p.status !== 'DONE' || p.totalAmount !== pack.won) return reply(400, { message: p.message || '결제 승인에 실패했어요.' });
-
-    await ref.create({ coins: pack.coins, won: pack.won, paymentKey, claimed: false, at: admin.firestore.FieldValue.serverTimestamp() });
-    return reply(200, { ok: true });
-  } catch (e) {
-    return reply(500, { message: '서버 오류가 났어요.' });
-  }
-};
