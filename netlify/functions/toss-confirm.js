@@ -45,4 +45,3 @@ exports.handler = async event => {
     return reply(500, { message: '서버 오류가 났어요.' });
   }
 };
-{ "name": "kongbang-functions", "version": "1.0.0", "private": true, "dependencies": { "firebase-admin": "^12.0.0" } }
